@@ -1,0 +1,41 @@
+version: "3.9"
+
+networks:
+  clusterNetwork:
+    driver: bridge
+
+services:
+  sources_db:
+    image: 'mariadb:11.3'
+    restart: always
+    container_name: 'sources_db'
+    environment:
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: sources
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+    ports:
+      - "3306:3306"
+    networks:
+      - clusterNetwork
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 'api'
+    environment:
+      - DB_SOURCE=mysql://user:password@tcp(sources_db:3306)/sources
+    depends_on:
+      sources_db:
+        condition: service_healthy
+    entrypoint:
+      ["/app/start.sh"]
+    command: [ "/app/main" ]
+    networks:
+      - clusterNetwork
