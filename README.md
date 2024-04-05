@@ -1,10 +1,16 @@
 # go-tasks
 
-To run the tasks:
-`docker compose build`
-`docker compose up`
+**Queries are in `hw1.sql`**
 
-Running `docker compose up` will run all the migrations, seeding and sql queries.
+**Schema generation code is in `db/migrations` folder**
+
+**Seeding was done in an overcomplicated way.**
+
+**To run the tasks:**
+1. `docker compose build` 
+2. `docker compose up`
+
+Running `docker compose up` will run all the migrations, seeding.
 
 Database available at: user:password@tcp(sources_db:3306)/sources
 
