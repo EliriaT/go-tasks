@@ -53,7 +53,7 @@ func (sf *SourceRepository) PersistAll(sources []*Source) error {
 	_, err := sf.Db.Exec(query, values...)
 
 	// yeah probably incorrect approach, should be rethought
-	nextId, err := getNextAutoIncrementValue(sf.Db, "campaigns")
+	nextId, err := getNextAutoIncrementValue(sf.Db, "sources")
 
 	for i := len(sources) - 1; i >= 0; i-- {
 		nextId--
