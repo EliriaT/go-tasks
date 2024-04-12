@@ -6,8 +6,10 @@ import (
 	"errors"
 	"github.com/EliriaT/go-tasks/db/models"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/exp/slices"
 	"log"
 	"strconv"
+	"strings"
 )
 
 type Server struct {
@@ -24,6 +26,7 @@ func NewServer(db *sql.DB) Server {
 
 func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	sourceId := c.Params("id")
+	domainWhitelist := strings.ToLower(c.Query("domain"))
 
 	sourceIdInt, err := strconv.Atoi(sourceId)
 	if err != nil {
@@ -47,6 +50,8 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 		campaigns = source.Campaigns
 	}
 
+	campaigns = filterCampaignsByWhitelist(domainWhitelist, campaigns)
+
 	jsonData, err := json.Marshal(campaigns)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Something went wrong")
@@ -55,4 +60,18 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/json")
 
 	return c.Send(jsonData)
+}
+
+// filtering could be done faster not with the complexity of O(n^2), if we would keep an index of campaigns per domain in cache
+// example: map[domain] -> []Campaign
+// To keep this index we would need to add or remove the campaign in the map[domain], everytime a campaign adds or removes a domain
+func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*models.Campaign {
+	filteredCampaigns := make([]*models.Campaign, 0, len(campaigns))
+
+	for _, campaign := range campaigns {
+		if slices.Contains(campaign.Domain, domain) {
+			filteredCampaigns = append(filteredCampaigns, campaign)
+		}
+	}
+	return filteredCampaigns
 }

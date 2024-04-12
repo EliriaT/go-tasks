@@ -8,6 +8,7 @@ import (
 type Campaign struct {
 	ID      int
 	Name    string
+	Domain  []string
 	Sources []*Source `json:"-"`
 }
 
