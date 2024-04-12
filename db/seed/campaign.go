@@ -16,7 +16,7 @@ func (c *CampaignSeeder) GetNCampaign(n int) []*models.Campaign {
 	var campaigns []*models.Campaign
 
 	for i := 0; i < n; i++ {
-		nameLength := rand.Intn(250) + 1
+		nameLength := rand.Intn(25) + 1
 		campaigns = append(campaigns, &models.Campaign{Name: c.GetRandomName(nameLength)}) // Adjust the length as needed
 	}
 

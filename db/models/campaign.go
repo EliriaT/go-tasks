@@ -2,14 +2,13 @@ package models
 
 import (
 	"database/sql"
-	"log"
 )
 
 // Campaign represents the source entity
 type Campaign struct {
 	ID      int
 	Name    string
-	Sources []*Source
+	Sources []*Source `json:"-"`
 }
 
 func (c *Campaign) AddSource(source *Source, wasRelationSet bool) {
@@ -86,8 +85,8 @@ func (cf *CampaignRepository) PersistSourcesRelation(campaign Campaign) error {
 		values = append(values, campaign.ID)
 		values = append(values, campaign.Sources[i].ID)
 	}
-	log.Println(query)
-	log.Println(values)
+	//log.Println(query)
+	//log.Println(values)
 
 	_, err := cf.Db.Exec(query, values...)
 

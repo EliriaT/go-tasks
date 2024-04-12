@@ -15,3 +15,9 @@ WHERE sac.source_id IS NULL;
 SELECT s.name FROM sources AS s
 UNION
 SELECT c.name FROM campaigns AS c;
+
+SELECT c.name
+FROM  sources_associated_campaigns as sac
+JOIN sources as s ON s.id = sac.source_id
+JOIN campaigns as c on c.id = sac.campaign_id
+WHERE source_id = 1

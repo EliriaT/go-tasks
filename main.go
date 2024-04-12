@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/EliriaT/go-tasks/api"
 	"github.com/EliriaT/go-tasks/db/models"
 	"github.com/EliriaT/go-tasks/db/seed"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gofiber/fiber/v2"
 	"log"
 	"math/rand"
 	"time"
@@ -17,7 +19,7 @@ func main() {
 	username := "user"
 	password := "password"
 	dbname := "sources"
-	dbHost := "sources_db"
+	dbHost := "localhost"
 	dbPort := 3306
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", username, password, dbHost, dbPort, dbname)
 
@@ -67,4 +69,12 @@ func main() {
 			log.Println(err)
 		}
 	}
+
+	server := api.NewServer(db)
+
+	app := fiber.New()
+
+	app.Get("/sources/:id<int>", server.GetCampaignsBySource)
+
+	log.Fatal(app.Listen(":8080"))
 }

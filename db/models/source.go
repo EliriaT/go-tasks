@@ -2,7 +2,10 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 )
+
+var ErrNotFound = errors.New("Error Not Found")
 
 // Source represents the source entity
 type Source struct {
@@ -24,9 +27,38 @@ type SourceRepository struct {
 	Db *sql.DB
 }
 
-// NewSourceFactory creates a new instance of SourceRepository
-func NewSourceFactory(db *sql.DB) *SourceRepository {
-	return &SourceRepository{db}
+// SourceRepository creates a new instance of SourceRepository
+func NewSourceRepository(db *sql.DB) SourceRepository {
+	return SourceRepository{db}
+}
+
+func (sf *SourceRepository) GetSourceWithCampaigns(sourceId int) (Source, error) {
+	query := `SELECT s.id, c.id, c.name FROM  sources_associated_campaigns as sac
+				RIGHT JOIN sources as s ON s.id = sac.source_id
+				LEFT JOIN campaigns as c on c.id = sac.campaign_id
+				WHERE s.id = ?`
+
+	rows, err := sf.Db.Query(query, sourceId)
+	if err != nil {
+		return Source{}, err
+	}
+	defer rows.Close()
+
+	source := Source{}
+
+	for rows.Next() {
+		var campaign Campaign
+		if err := rows.Scan(&source.ID, &campaign.ID, &campaign.Name); err != nil {
+			return Source{}, err
+		}
+		source.Campaigns = append(source.Campaigns, &campaign)
+	}
+
+	if source.ID == 0 {
+		return Source{}, ErrNotFound
+	}
+
+	return source, err
 }
 
 // Persist saves a single source in the database
