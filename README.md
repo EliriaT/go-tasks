@@ -1,5 +1,10 @@
 # go-tasks
 
+To run the benchmark test:
+`cd api`
+`go test -bench=. -benchtime 5s -benchmem`
+
+
 **Queries are in `hw1.sql`**
 
 **Schema generation code is in `db/migrations` folder**
