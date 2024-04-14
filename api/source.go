@@ -66,6 +66,10 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 // example: map[domain] -> []Campaign
 // To keep this index we would need to add or remove the campaign in the map[domain], everytime a campaign adds or removes a domain
 func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*models.Campaign {
+	if domain == "" {
+		return campaigns
+	}
+
 	filteredCampaigns := make([]*models.Campaign, 0, len(campaigns))
 
 	for _, campaign := range campaigns {
