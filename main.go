@@ -28,6 +28,18 @@ func main() {
 		log.Fatalf("Error connecting to the database %v", err)
 	}
 
+	seedDb(db)
+
+	server := api.NewServer(db)
+
+	app := fiber.New()
+
+	app.Get("/sources/:id<int>", server.GetCampaignsBySource)
+
+	log.Fatal(app.Listen(":8080"))
+}
+
+func seedDb(db *sql.DB) {
 	sourceRepository := models.SourceRepository{
 		db,
 	}
@@ -57,7 +69,7 @@ func main() {
 		}
 	}
 
-	err = campaignRepository.PersistAll(campaigns)
+	err := campaignRepository.PersistAll(campaigns)
 	log.Println(err)
 
 	err = sourceRepository.PersistAll(sources)
@@ -69,12 +81,4 @@ func main() {
 			log.Println(err)
 		}
 	}
-
-	server := api.NewServer(db)
-
-	app := fiber.New()
-
-	app.Get("/sources/:id<int>", server.GetCampaignsBySource)
-
-	log.Fatal(app.Listen(":8080"))
 }
