@@ -1,0 +1,2 @@
+ALTER TABLE campaigns
+    ADD COLUMN list_type INT NOT NULL DEFAULT 1;
