@@ -32,11 +32,18 @@ func NewSourceRepository(db *sql.DB) SourceRepository {
 	return SourceRepository{db}
 }
 
-func (sf *SourceRepository) GetSourceWithCampaigns(sourceId int) (Source, error) {
-	query := `SELECT s.id, c.id, c.name FROM  sources_associated_campaigns as sac
+// we could also filter directly by domain:
+// WHERE d.name = "google.com"
+// and then store the result in cache and invalidate it when necessary
+// But in case query by domain varies a lot (there are a lot of different domains that are queried), doing without `WHERE d.name = "google.com"` can be better I think
+func (sf *SourceRepository) GetSourceWithCampaignsAndDomains(sourceId int) (Source, error) {
+	query := `SELECT s.id, c.id, c.name, c.list_type, d.domain FROM  sources_associated_campaigns as sac
 				RIGHT JOIN sources as s ON s.id = sac.source_id
 				LEFT JOIN campaigns as c on c.id = sac.campaign_id
-				WHERE s.id = ?`
+			 	LEFT JOIN campaigns_associated_domains cad on c.id = cad.campaign_id
+			 	LEFT JOIN domains d on d.id = cad.domain_id
+				WHERE s.id = ?
+				ORDER BY c.name`
 
 	rows, err := sf.Db.Query(query, sourceId)
 	if err != nil {
@@ -45,13 +52,37 @@ func (sf *SourceRepository) GetSourceWithCampaigns(sourceId int) (Source, error)
 	defer rows.Close()
 
 	source := Source{}
+	previousCampaignID := 0
+	var campaign = Campaign{
+		List: make(map[string]bool),
+	}
 
 	for rows.Next() {
-		var campaign Campaign
-		if err := rows.Scan(&source.ID, &campaign.ID, &campaign.Name); err != nil {
+		var domainColumn sql.NullString // the joined column can be null if the white/blacklist is empty
+		var domain Domain
+
+		if err := rows.Scan(&source.ID, &campaign.ID, &campaign.Name, &campaign.ListType, &domainColumn); err != nil {
 			return Source{}, err
 		}
-		source.Campaigns = append(source.Campaigns, &campaign)
+
+		if domainColumn.Valid {
+			domain.Name = domainColumn.String
+
+			// this is because the query contains repeated campaign names and their different domains
+			if campaign.ID == previousCampaignID {
+				lastCampaignIndex := len(source.Campaigns) - 1
+				source.Campaigns[lastCampaignIndex].AddDomain(&domain)
+			}
+
+			if campaign.ID != previousCampaignID {
+				campaign.List = make(map[string]bool)
+				campaign.AddDomain(&domain)
+				copiedCampaign := campaign
+				source.Campaigns = append(source.Campaigns, &copiedCampaign)
+			}
+		}
+
+		previousCampaignID = campaign.ID
 	}
 
 	if source.ID == 0 {

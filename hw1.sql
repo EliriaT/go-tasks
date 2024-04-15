@@ -16,8 +16,10 @@ SELECT s.name FROM sources AS s
 UNION
 SELECT c.name FROM campaigns AS c;
 
-SELECT c.name
-FROM  sources_associated_campaigns as sac
-JOIN sources as s ON s.id = sac.source_id
-JOIN campaigns as c on c.id = sac.campaign_id
-WHERE source_id = 1
+SELECT s.id, c.id, c.name, c.list_type, d.domain FROM  sources_associated_campaigns as sac
+RIGHT JOIN sources as s ON s.id = sac.source_id
+LEFT JOIN campaigns as c on c.id = sac.campaign_id
+LEFT JOIN campaigns_associated_domains cad on c.id = cad.campaign_id
+LEFT JOIN domains d on d.id = cad.domain_id
+WHERE s.id = 1
+ORDER BY c.name

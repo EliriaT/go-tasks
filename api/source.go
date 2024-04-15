@@ -35,7 +35,7 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	campaigns, present := s.cache.Get(sourceIdInt)
 
 	if !present {
-		source, err := s.sourceRepo.GetSourceWithCampaigns(sourceIdInt)
+		source, err := s.sourceRepo.GetSourceWithCampaignsAndDomains(sourceIdInt)
 		if err != nil {
 			if errors.Is(err, models.ErrNotFound) {
 				return c.Status(fiber.StatusNotFound).SendString("No such source exist")
@@ -61,9 +61,6 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	return c.Send(jsonData)
 }
 
-// filtering could be done faster not with the complexity of O(n^2), if we would keep an index of campaigns per domain in cache
-// example: map[domain] -> []Campaign
-// To keep this index we would need to add or remove the campaign in the map[domain], everytime a campaign adds or removes a domain
 func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*models.Campaign {
 	if domain == "" {
 		return campaigns
@@ -72,9 +69,29 @@ func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*
 	filteredCampaigns := make([]*models.Campaign, 0, len(campaigns))
 
 	for _, campaign := range campaigns {
-		if _, ok := campaign.List[domain]; ok {
+		if passesBlackFilter(campaign, domain) || passesWhiteFilter(campaign, domain) {
 			filteredCampaigns = append(filteredCampaigns, campaign)
 		}
 	}
 	return filteredCampaigns
+}
+
+func passesWhiteFilter(campaign *models.Campaign, domain string) bool {
+	if campaign.ListType == models.WhiteList {
+		if _, ok := campaign.List[domain]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func passesBlackFilter(campaign *models.Campaign, domain string) bool {
+	if campaign.ListType == models.BlackList {
+		if _, ok := campaign.List[domain]; !ok {
+			return true
+		}
+	}
+
+	return false
 }
