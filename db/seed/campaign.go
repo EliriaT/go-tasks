@@ -11,13 +11,13 @@ type CampaignSeeder struct {
 	Repository models.CampaignRepository
 }
 
-// GetNSources generates a slice of N random source names
+// GetNCampaign generates a slice of N random campaign names
 func (c *CampaignSeeder) GetNCampaign(n int) []*models.Campaign {
 	var campaigns []*models.Campaign
 
 	for i := 0; i < n; i++ {
 		nameLength := rand.Intn(25) + 1
-		campaigns = append(campaigns, &models.Campaign{Name: c.GetRandomName(nameLength)}) // Adjust the length as needed
+		campaigns = append(campaigns, &models.Campaign{Name: c.GetRandomName(nameLength), ListType: models.ListType(rand.Intn(2)), List: make(map[string]bool)})
 	}
 
 	return campaigns

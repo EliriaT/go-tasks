@@ -61,13 +61,6 @@ func (sf *SourceRepository) GetSourceWithCampaigns(sourceId int) (Source, error)
 	return source, err
 }
 
-// Persist saves a single source in the database
-func (sf *SourceRepository) Persist(source Source) error {
-	_, err := sf.Db.Exec("INSERT INTO sources (name) VALUES (?)", source.Name)
-
-	return err
-}
-
 // PersistAll performs a one query insert for an array of sources
 func (sf *SourceRepository) PersistAll(sources []*Source) error {
 

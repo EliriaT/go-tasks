@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/EliriaT/go-tasks/db/models"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/exp/slices"
 	"log"
 	"strconv"
 	"strings"
@@ -73,7 +72,7 @@ func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*
 	filteredCampaigns := make([]*models.Campaign, 0, len(campaigns))
 
 	for _, campaign := range campaigns {
-		if slices.Contains(campaign.Domain, domain) {
+		if _, ok := campaign.List[domain]; ok {
 			filteredCampaigns = append(filteredCampaigns, campaign)
 		}
 	}

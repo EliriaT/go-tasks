@@ -19,7 +19,7 @@ func main() {
 	username := "user"
 	password := "password"
 	dbname := "sources"
-	dbHost := "localhost"
+	dbHost := "sources_db"
 	dbPort := 3306
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", username, password, dbHost, dbPort, dbname)
 
@@ -40,24 +40,28 @@ func main() {
 }
 
 func seedDb(db *sql.DB) {
-	sourceRepository := models.SourceRepository{
-		db,
-	}
+	seeder := seed.Seeder{}
+	sourceRepository := models.NewSourceRepository(db)
 	sourceSeeder := seed.SourceSeeder{
-		seed.Seeder{},
+		seeder,
 		sourceRepository,
 	}
 
-	campaignRepository := models.CampaignRepository{
-		db,
-	}
+	campaignRepository := models.NewCampaignRepository(db)
 	campaignSeeder := seed.CampaignSeeder{
-		seed.Seeder{},
+		seeder,
 		campaignRepository,
+	}
+
+	domainRepository := models.NewDomainRepository(db)
+	domainSeeder := seed.DomainSeeder{
+		seeder,
+		domainRepository,
 	}
 
 	campaigns := campaignSeeder.GetNCampaign(100)
 	sources := sourceSeeder.GetNSources(100)
+	domains := domainSeeder.GetNDomains(15)
 
 	for i, _ := range campaigns {
 		numberOfSources := rand.Intn(10)
@@ -65,7 +69,12 @@ func seedDb(db *sql.DB) {
 		for j := 0; j < numberOfSources; j++ {
 			randomSourceIndex := rand.Intn(100)
 			campaigns[i].AddSource(sources[randomSourceIndex], false)
+		}
 
+		numberOfDomains := rand.Intn(10)
+		for j := 0; j < numberOfDomains; j++ {
+			randomDomainIndex := rand.Intn(15)
+			campaigns[i].AddDomain(domains[randomDomainIndex])
 		}
 	}
 
@@ -75,9 +84,17 @@ func seedDb(db *sql.DB) {
 	err = sourceRepository.PersistAll(sources)
 	log.Println(err)
 
+	err = domainRepository.PersistAll(domains)
+	log.Println(err)
+
 	for _, campaign := range campaigns {
 		if len(campaign.Sources) > 0 {
 			err = campaignRepository.PersistSourcesRelation(*campaign)
+			log.Println(err)
+		}
+
+		if len(campaign.Domains) > 0 {
+			err = campaignRepository.PersistDomainsRelation(*campaign)
 			log.Println(err)
 		}
 	}

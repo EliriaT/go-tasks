@@ -4,12 +4,21 @@ import (
 	"database/sql"
 )
 
-// Campaign represents the source entity
+type ListType int
+
+const (
+	WhiteList ListType = iota
+	BlackList
+)
+
+// Campaign represents the campaign entity
 type Campaign struct {
-	ID      int
-	Name    string
-	Domain  []string
-	Sources []*Source `json:"-"`
+	ID       int
+	Name     string
+	ListType ListType        `json:"-"`
+	Domains  []*Domain       `json:"-"`
+	List     map[string]bool `json:"-"`
+	Sources  []*Source       `json:"-"`
 }
 
 func (c *Campaign) AddSource(source *Source, wasRelationSet bool) {
@@ -20,34 +29,35 @@ func (c *Campaign) AddSource(source *Source, wasRelationSet bool) {
 	c.Sources = append(c.Sources, source)
 }
 
-// SourceRepository represents a repository for saving campaigns in db
+func (c *Campaign) AddDomain(domain *Domain) {
+	domain.AddCampaign(c)
+	c.Domains = append(c.Domains, domain)
+	c.List[domain.Name] = true
+}
+
+// CampaignRepository represents a repository for saving campaigns in db
 type CampaignRepository struct {
 	Db *sql.DB
 }
 
-// NewCampaignFactory creates a new instance of CampaignRepository
-func NewCampaignFactory(db *sql.DB) *CampaignRepository {
-	return &CampaignRepository{db}
-}
-
-// Persist saves a single campaign in the database
-func (cf *CampaignRepository) Persist(campaign Campaign) error {
-	_, err := cf.Db.Exec("INSERT INTO campaigns (name) VALUES (?)", campaign.Name)
-
-	return err
+// NewCampaignRepository creates a new instance of CampaignRepository
+func NewCampaignRepository(db *sql.DB) CampaignRepository {
+	return CampaignRepository{db}
 }
 
 // PersistAll performs a one query insert for an array of campaigns
 func (cf *CampaignRepository) PersistAll(campaigns []*Campaign) error {
-	query := "INSERT INTO campaigns (name) VALUES"
-	values := make([]interface{}, len(campaigns), len(campaigns))
+	query := "INSERT INTO campaigns (name, list_type) VALUES"
+	values := make([]interface{}, 0, 2*len(campaigns))
 
 	for i := 0; i < len(campaigns); i++ {
 		if i > 0 {
 			query += ","
 		}
-		query += "(?)"
-		values[i] = campaigns[i].Name
+		query += "(?,?)"
+
+		values = append(values, campaigns[i].Name)
+		values = append(values, campaigns[i].ListType)
 	}
 
 	_, err := cf.Db.Exec(query, values...)
@@ -86,8 +96,25 @@ func (cf *CampaignRepository) PersistSourcesRelation(campaign Campaign) error {
 		values = append(values, campaign.ID)
 		values = append(values, campaign.Sources[i].ID)
 	}
-	//log.Println(query)
-	//log.Println(values)
+
+	_, err := cf.Db.Exec(query, values...)
+
+	return err
+}
+
+func (cf *CampaignRepository) PersistDomainsRelation(campaign Campaign) error {
+	query := "INSERT IGNORE INTO campaigns_associated_domains (campaign_id, domain_id) VALUES"
+	values := make([]interface{}, 0, 2*len(campaign.Domains))
+
+	for i := 0; i < len(campaign.Domains); i++ {
+		if i > 0 {
+			query += ","
+		}
+		query += "(?,?)"
+
+		values = append(values, campaign.ID)
+		values = append(values, campaign.Domains[i].ID)
+	}
 
 	_, err := cf.Db.Exec(query, values...)
 
