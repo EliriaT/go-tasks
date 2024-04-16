@@ -49,7 +49,7 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 		campaigns = source.Campaigns
 	}
 
-	campaigns = filterCampaignsByWhitelist(domainWhitelist, campaigns)
+	campaigns = filterCampaigns(domainWhitelist, campaigns)
 
 	jsonData, err := json.Marshal(campaigns)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	return c.Send(jsonData)
 }
 
-func filterCampaignsByWhitelist(domain string, campaigns []*models.Campaign) []*models.Campaign {
+func filterCampaigns(domain string, campaigns []*models.Campaign) []*models.Campaign {
 	if domain == "" {
 		return campaigns
 	}
