@@ -44,19 +44,16 @@ func seedDb(db *sql.DB) {
 	sourceRepository := models.NewSourceRepository(db)
 	sourceSeeder := seed.SourceSeeder{
 		seeder,
-		sourceRepository,
 	}
 
 	campaignRepository := models.NewCampaignRepository(db)
 	campaignSeeder := seed.CampaignSeeder{
 		seeder,
-		campaignRepository,
 	}
 
 	domainRepository := models.NewDomainRepository(db)
 	domainSeeder := seed.DomainSeeder{
 		seeder,
-		domainRepository,
 	}
 
 	campaigns := campaignSeeder.GetNCampaign(100)
@@ -65,7 +62,6 @@ func seedDb(db *sql.DB) {
 
 	for i, _ := range campaigns {
 		numberOfSources := rand.Intn(10)
-
 		for j := 0; j < numberOfSources; j++ {
 			randomSourceIndex := rand.Intn(100)
 			campaigns[i].AddSource(sources[randomSourceIndex], false)

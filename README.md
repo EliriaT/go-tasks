@@ -1,7 +1,28 @@
 # go-tasks
 
+Benchmark results:
+
+![img.png](resources/img.png)
+
+From the cpu profiler results we can see that `filterCampaignsViaSlice` takes much more time to run in comparing to
+`filterCampaignsViaMap` (11.61 vs 6.93s)
+
+![img.png](resources/img2.png)
+
+A more comprehensive graph:
+
+![img.png](resources/img3.png)
+
+![img.png](resources/img5.png)
+
+Memory profile results:
+![img.png](resources/img6.png)
+
+![img_1.png](resources/img_1.png)
+
 To run the benchmark test:
 `cd api`
+
 `go test -bench=. -benchtime 5s -benchmem`
 
 

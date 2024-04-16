@@ -49,7 +49,7 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 		campaigns = source.Campaigns
 	}
 
-	campaigns = filterCampaigns(domainWhitelist, campaigns)
+	campaigns = filterCampaignsViaSlice(domainWhitelist, campaigns)
 
 	jsonData, err := json.Marshal(campaigns)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 	return c.Send(jsonData)
 }
 
-func filterCampaigns(domain string, campaigns []*models.Campaign) []*models.Campaign {
+func filterCampaignsViaMap(domain string, campaigns []*models.Campaign) []*models.Campaign {
 	if domain == "" {
 		return campaigns
 	}
@@ -94,4 +94,29 @@ func passesBlackFilter(campaign *models.Campaign, domain string) bool {
 	}
 
 	return false
+}
+
+func filterCampaignsViaSlice(domainName string, campaigns []*models.Campaign) []*models.Campaign {
+	if domainName == "" {
+		return campaigns
+	}
+
+	filteredCampaigns := make([]*models.Campaign, 0, len(campaigns))
+
+	for _, campaign := range campaigns {
+		isInList := false
+
+		for _, domain := range campaign.Domains {
+			if domain.Name == domainName {
+				isInList = true
+			}
+		}
+
+		if campaign.ListType == models.BlackList && isInList == false {
+			filteredCampaigns = append(filteredCampaigns, campaign)
+		} else if campaign.ListType == models.WhiteList && isInList == true {
+			filteredCampaigns = append(filteredCampaigns, campaign)
+		}
+	}
+	return filteredCampaigns
 }

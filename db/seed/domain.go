@@ -8,7 +8,6 @@ import (
 // DomainSeeder helps with getting a random domain
 type DomainSeeder struct {
 	Seeder
-	Repository models.DomainRepository
 }
 
 // GetNSources generates a slice of N random source names

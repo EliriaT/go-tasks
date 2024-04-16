@@ -8,7 +8,6 @@ import (
 // CampaignSeeder helps with getting a random source
 type CampaignSeeder struct {
 	Seeder
-	Repository models.CampaignRepository
 }
 
 // GetNCampaign generates a slice of N random campaign names
@@ -21,8 +20,4 @@ func (c *CampaignSeeder) GetNCampaign(n int) []*models.Campaign {
 	}
 
 	return campaigns
-}
-
-func (c *CampaignSeeder) SeedInDb(campaigns []*models.Campaign) error {
-	return c.Repository.PersistAll(campaigns)
 }
