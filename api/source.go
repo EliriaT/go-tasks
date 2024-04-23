@@ -7,9 +7,18 @@ import (
 	"github.com/EliriaT/go-tasks/db/models"
 	"github.com/gofiber/fiber/v2"
 	"log"
+	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
+
+type campaignOffer struct {
+	Amount int
+	Index  int
+}
 
 type Server struct {
 	cache      *Cache
@@ -49,7 +58,35 @@ func (s Server) GetCampaignsBySource(c *fiber.Ctx) error {
 		campaigns = source.Campaigns
 	}
 
-	campaigns = filterCampaignsViaSlice(domainWhitelist, campaigns)
+	campaigns = filterCampaignsViaMap(domainWhitelist, campaigns)
+
+	var wg sync.WaitGroup
+	wg.Add(len(campaigns))
+	offersChan := make(chan campaignOffer, len(campaigns))
+	offers := make([]int, len(campaigns))
+
+	for index := range campaigns {
+		go func(index int) {
+			result := callForCampaign()
+			offersChan <- campaignOffer{
+				Amount: result,
+				Index:  index,
+			}
+		}(index)
+	}
+
+	go func() {
+		for offer := range offersChan {
+			offers[offer.Index] = offer.Amount
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
+
+	sort.Ints(offers)
+
+	log.Println(offers[0])
 
 	jsonData, err := json.Marshal(campaigns)
 	if err != nil {
@@ -119,4 +156,9 @@ func filterCampaignsViaSlice(domainName string, campaigns []*models.Campaign) []
 		}
 	}
 	return filteredCampaigns
+}
+
+func callForCampaign() int {
+	time.Sleep(time.Second * 3)
+	return rand.Intn(500)
 }
